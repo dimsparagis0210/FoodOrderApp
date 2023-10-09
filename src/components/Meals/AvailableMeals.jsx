@@ -6,11 +6,22 @@ import { useEffect, useState } from 'react';
 
 export const AvailableMeals = () => {
     const [meals, setMeals] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
     //The use of the inner function fecthMeals() is done because useEffect can't accept async functions
     useEffect(() => {
+        setIsLoading(true);
+
         const fetchMeals = async() => {
-            const response = await fetch('https://react-http-53718-default-rtdb.firebaseio.com/meals.json');
+            const response = await fetch(
+                'https://react-http-53718-default-rtdb.firebaseio.com/meals.json'
+            );
+
+            if (!response.ok) {
+                throw new Error('Something went wrong');
+            }
+
             const responseData = await response.json();
             const loadedMeals = [];
             for (const key in responseData) {
@@ -19,13 +30,31 @@ export const AvailableMeals = () => {
                     name: responseData[key].name,
                     description:responseData[key].description,
                     price :responseData[key].price
-                })
+                });
             }
             setMeals(loadedMeals);
+            setIsLoading(false);
         };
 
-        fetchMeals();
+        fetchMeals().catch(error => {
+            setIsLoading(false);
+            setError(error.message);
+        })
     }, []);
+
+    if (isLoading) {
+        return (
+            <section className={classes.mealsLoading}>
+                <p>Loading...</p>
+            </section>
+        );
+    }
+
+    if (error) {
+        return <section className={classes.mealsError}>
+            <p>{error}</p>
+        </section>
+    }
 
     const mealsList = meals.map(meal =>
         <MealItem
@@ -36,11 +65,13 @@ export const AvailableMeals = () => {
             price={meal.price}
         >
             {meal.name}
-        </MealItem>);
+        </MealItem>
+    );
+
     return (
         <section className={classes.meals}>
             <Card>
-                <ul >
+                <ul>
                     {mealsList}
                 </ul>
             </Card>
